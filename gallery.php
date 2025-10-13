@@ -229,7 +229,7 @@ class plgContentGallery extends JPlugin {
             }
             $html .= ' <figure class="gallery-thumbnail">';
             $html .= '     <a href="' . $largeImgSrc . '" itemprop="contentUrl" data-size="' . $imageSizeArray[0] . 'x' . $imageSizeArray[1] . '">';
-            $html .= '         <img class="gallery-thumbnail-image" loading="lazy" width="' . $imageSizeArray[0] . '" height="' . $imageSizeArray[1] . '" src="' . $smallImgSrc .'" />';
+            $html .= '         <img class="gallery-thumbnail-image" loading="lazy" width="' . $imageSizeArray[0] . '" height="' . $imageSizeArray[1] . '" src="' . $smallImgSrc .'" alt="" />';
             $html .= '     </a>';
             $html .= ' </figure>';
         }
