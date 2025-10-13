@@ -195,6 +195,7 @@ class plgContentGallery extends JPlugin {
 
         // Generate the image thumbnail-list
         $html .= '<div class="gallery-wrapper" itemscope itemtype="http://schema.org/ImageGallery">';
+        $count = 1;
         foreach ($images as $key => $image) {
             if ($this->imageTransformer === 'Imagetransformer') {
                 $largeImgSrc = Imagetransformer::generateUrl($image, [
@@ -228,10 +229,11 @@ class plgContentGallery extends JPlugin {
                 $smallImgSrc = $image;
             }
             $html .= ' <figure class="gallery-thumbnail">';
-            $html .= '     <a href="' . $largeImgSrc . '" itemprop="contentUrl" data-size="' . $imageSizeArray[0] . 'x' . $imageSizeArray[1] . '">';
+            $html .= '     <a href="' . $largeImgSrc . '" aria-label="Öffnet Bild Nummer ' . $count . '" data-size="' . $imageSizeArray[0] . 'x' . $imageSizeArray[1] . '">';
             $html .= '         <img class="gallery-thumbnail-image" loading="lazy" width="' . $imageSizeArray[0] . '" height="' . $imageSizeArray[1] . '" src="' . $smallImgSrc .'" alt="" />';
             $html .= '     </a>';
             $html .= ' </figure>';
+            $count++;
         }
         $html .= '</div>';
         unset($images, $image, $imgSrc);
