@@ -174,7 +174,9 @@ class plgContentGallery extends JPlugin {
                         </script>
             ';
             $head = "\n".implode("\n", $head)."\n";
-            $document->addCustomTag($head);
+            if (is_object($document) && method_exists($document, 'addCustomTag')) {
+                $document->addCustomTag($head);
+            }
         }
 
         // Generate the HTML-script-tag with dynamic images
