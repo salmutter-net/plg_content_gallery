@@ -5,7 +5,7 @@
 /* pswp = photoswipe */
 .pswp {
   display: none;
-  position: absolute;
+  position: fixed;
   width: 100%;
   height: 100%;
   left: 0;
@@ -21,8 +21,10 @@
 .pswp * {
   -webkit-box-sizing: border-box;
   box-sizing: border-box; }
-.pswp img {
-  max-width: none; }
+.pswp img,
+.pswp__img {
+  max-width: none !important;
+  max-height: none !important; }
 
 /* style is added when JS option showHideOpacity is set to true */
 .pswp--animate_opacity {

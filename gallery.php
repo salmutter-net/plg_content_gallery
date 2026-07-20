@@ -201,38 +201,45 @@ class plgContentGallery extends JPlugin {
         foreach ($images as $key => $image) {
             if ($this->imageTransformer === 'Imagetransformer') {
                 $largeImgSrc = Imagetransformer::generateUrl($image, [
-                'w' => 1660,
-                'h' => 1245,
-                'fit' => 'crop',
-                'q' => 70,
-                'bg' => 'black',
-                'fm' => 'webp'
+                    'w' => 1660,
+                    'h' => 1245,
+                    'fit' => 'crop',
+                    'q' => 70,
+                    'bg' => 'black',
+                    'fm' => 'webp'
                 ]);
-                $imageSizeArray = getimagesize(str_replace(' ', "%20", $largeImgSrc));
+                $largeImgSize = [1660, 1245];
+                $smallImgSrc = Imagetransformer::generateUrl($image, [
+                    'w' => 394,
+                    'h' => 296,
+                    'fit' => 'crop',
+                    'q' => 70,
+                    'bg' => 'white',
+                    'fm' => 'webp'
+                ]);
+                $smallImgSize = [394, 296];
             } else if ($this->imageTransformer === 'ImgResizeCache') {
-                $largeImgSrc = htmlspecialchars( $resizer->resize( $image, array( 'w' => 1660, 'h' => 1245, 'crop' => false, 'canvas-color' => '#000' ) ) );
-                $imageSizeArray = getimagesize(JPATH_BASE . '/' . parse_url($largeImgSrc, PHP_URL_PATH));
+                $largeImgSrc = htmlspecialchars($resizer->resize($image, ['w' => 1660, 'h' => 1245, 'crop' => false, 'canvas-color' => '#000']));
+                $largeImgSize = getimagesize(JPATH_BASE . '/' . parse_url($largeImgSrc, PHP_URL_PATH));
+                $smallImgSrc = htmlspecialchars($resizer->resize($image, ['w' => 197, 'h' => 132, 'crop' => false, 'canvas-color' => '#fff']));
+                $smallImgSize = [197, 132];
             } else {
                 $largeImgSrc = $image;
-                $imageSizeArray = getimagesize($largeImgSrc);
-            }
-            if ($this->imageTransformer === 'Imagetransformer') {
-                $smallImgSrc = Imagetransformer::generateUrl($image, [
-                'w' => 394,
-                'h' => 295.5,
-                'fit' => 'crop',
-                'q' => 70,
-                'bg' => 'white',
-                'fm' => 'webp'
-                ]);
-            } else if ($this->imageTransformer === 'ImgResizeCache') {
-                $smallImgSrc = htmlspecialchars($resizer->resize( $image, array('w' => 197, 'h' => 132, 'crop' => false, 'canvas-color' => '#fff')));
-            } else {
+                $largeImgSize = getimagesize($largeImgSrc);
                 $smallImgSrc = $image;
+                $smallImgSize = $largeImgSize;
             }
+
+            if (!$largeImgSize || $largeImgSize[0] <= 0 || $largeImgSize[1] <= 0) {
+                $largeImgSize = [1660, 1245];
+            }
+            if (!$smallImgSize || $smallImgSize[0] <= 0 || $smallImgSize[1] <= 0) {
+                $smallImgSize = $largeImgSize;
+            }
+
             $html .= ' <figure class="gallery-thumbnail">';
-            $html .= '     <a href="' . $largeImgSrc . '" aria-label="Öffnet Bild Nummer ' . $count . '" data-size="' . $imageSizeArray[0] . 'x' . $imageSizeArray[1] . '">';
-            $html .= '         <img class="gallery-thumbnail-image" loading="lazy" width="' . $imageSizeArray[0] . '" height="' . $imageSizeArray[1] . '" src="' . $smallImgSrc .'" alt="" />';
+            $html .= '     <a href="' . $largeImgSrc . '" aria-label="Öffnet Bild Nummer ' . $count . '" data-size="' . (int)$largeImgSize[0] . 'x' . (int)$largeImgSize[1] . '">';
+            $html .= '         <img class="gallery-thumbnail-image" loading="lazy" width="' . (int)$smallImgSize[0] . '" height="' . (int)$smallImgSize[1] . '" src="' . $smallImgSrc . '" alt="" />';
             $html .= '     </a>';
             $html .= ' </figure>';
             $count++;
