@@ -130,6 +130,16 @@ class plgContentGallery extends JPlugin {
         unset($textToParse);
     }
 
+    private function getContainedImageSize($imagePath, $maxW, $maxH) {
+        $fullPath = $this->_absolute_path . '/' . $imagePath;
+        $size = @getimagesize($fullPath);
+        if (!$size || $size[0] <= 0 || $size[1] <= 0) {
+            return [(int)$maxW, (int)$maxH];
+        }
+        $scale = min($maxW / $size[0], $maxH / $size[1]);
+        return [(int)round($size[0] * $scale), (int)round($size[1] * $scale)];
+    }
+
     function renderGallery($type, &$object, $images, $galleryPath) {
         if (empty($type) || empty($object) || empty($images) || empty($galleryPath)) {
             echo '<strong>'.JText::_('Essentielle Variable nicht übergeben!').'</strong>';
@@ -203,29 +213,27 @@ class plgContentGallery extends JPlugin {
                 $largeImgSrc = Imagetransformer::generateUrl($image, [
                     'w' => 1660,
                     'h' => 1245,
-                    'fit' => 'crop',
+                    'fit' => 'contain',
                     'q' => 70,
-                    'bg' => 'black',
                     'fm' => 'webp'
                 ]);
-                $largeImgSize = [1660, 1245];
+                $largeImgSize = $this->getContainedImageSize($image, 1660, 1245);
                 $smallImgSrc = Imagetransformer::generateUrl($image, [
                     'w' => 394,
                     'h' => 296,
-                    'fit' => 'crop',
+                    'fit' => 'contain',
                     'q' => 70,
-                    'bg' => 'white',
                     'fm' => 'webp'
                 ]);
-                $smallImgSize = [394, 296];
+                $smallImgSize = $this->getContainedImageSize($image, 394, 296);
             } else if ($this->imageTransformer === 'ImgResizeCache') {
                 $largeImgSrc = htmlspecialchars($resizer->resize($image, ['w' => 1660, 'h' => 1245, 'crop' => false, 'canvas-color' => '#000']));
-                $largeImgSize = getimagesize(JPATH_BASE . '/' . parse_url($largeImgSrc, PHP_URL_PATH));
+                $largeImgSize = $this->getContainedImageSize($image, 1660, 1245);
                 $smallImgSrc = htmlspecialchars($resizer->resize($image, ['w' => 197, 'h' => 132, 'crop' => false, 'canvas-color' => '#fff']));
-                $smallImgSize = [197, 132];
+                $smallImgSize = $this->getContainedImageSize($image, 197, 132);
             } else {
                 $largeImgSrc = $image;
-                $largeImgSize = getimagesize($largeImgSrc);
+                $largeImgSize = @getimagesize($this->_absolute_path . '/' . $image);
                 $smallImgSrc = $image;
                 $smallImgSize = $largeImgSize;
             }
