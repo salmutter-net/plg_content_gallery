@@ -136,8 +136,24 @@ class plgContentGallery extends JPlugin {
         if (!$size || $size[0] <= 0 || $size[1] <= 0) {
             return [(int)$maxW, (int)$maxH];
         }
-        $scale = min($maxW / $size[0], $maxH / $size[1]);
-        return [(int)round($size[0] * $scale), (int)round($size[1] * $scale)];
+
+        $width  = $size[0];
+        $height = $size[1];
+
+        if (function_exists('exif_read_data')) {
+            $exif = @exif_read_data($fullPath, 'IFD0');
+            if (is_array($exif) && !empty($exif['Orientation'])) {
+                $orientation = (int) $exif['Orientation'];
+                if (in_array($orientation, [5, 6, 7, 8], true)) {
+                    $tmp = $width;
+                    $width = $height;
+                    $height = $tmp;
+                }
+            }
+        }
+
+        $scale = min($maxW / $width, $maxH / $height);
+        return [(int)round($width * $scale), (int)round($height * $scale)];
     }
 
     function renderGallery($type, &$object, $images, $galleryPath) {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="plugin" version="3.0" group="content" method="upgrade">
     <name>Gallery Content Plugin with PhotoSwipe</name>
-    <version>0.9.5</version>
+    <version>0.9.6</version>
     <creationDate>2026.07.20</creationDate>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <copyright>Copyright 2015 salmutter.net – DI Philipp Salmutter. All rights reserved.</copyright>
