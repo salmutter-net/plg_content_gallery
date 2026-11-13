@@ -8,6 +8,7 @@
  *  @license Commercial
  */
 
+use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Event\Content\ContentPrepareEvent;
 use Joomla\CMS\Factory;
 use Joomla\CMS\Language\Text;
@@ -75,7 +76,8 @@ class PlgContentGallery extends CMSPlugin implements SubscriberInterface
             return;
         }
 
-        $this->_rootfolder = '/images/';
+        $mediaPath = ComponentHelper::getParams('com_media')->get('image_path', 'images');
+        $this->_rootfolder = '/' . trim($mediaPath, '/\\') . '/';
 
         if (preg_match_all('@{gallery}(.*){/gallery}@Us', $textToParse, $matches, PREG_PATTERN_ORDER) > 0) {
             $this->galleryCountArticles++;
