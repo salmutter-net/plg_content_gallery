@@ -1,0 +1,42 @@
+/**
+ * Base styling for {gallery} output.
+ * Columns and thumbnail max-height are controlled via CSS custom properties
+ * set inline by the plugin: --gallery-columns, --gallery-max-height.
+ */
+.gallery-wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--gallery-gap, 1rem);
+    margin-bottom: 1rem;
+    padding: 1rem 0;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .gallery-wrapper {
+        grid-template-columns: repeat(var(--gallery-columns, 4), 1fr);
+    }
+}
+
+.gallery-wrapper .gallery-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.gallery-wrapper .gallery-thumbnail a {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    border-bottom: none;
+}
+
+.gallery-wrapper .gallery-thumbnail-image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: var(--gallery-max-height, 180px);
+    box-shadow: 0 0 10px rgba(0, 0, 0, .25);
+}

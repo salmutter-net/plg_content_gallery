@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="plugin" version="4.0" group="content" method="upgrade">
-    <name>Gallery Content Plugin with PhotoSwipe</name>
+    <name>plg_content_gallery</name>
     <version>1.0.0</version>
     <creationDate>2026.11.13</creationDate>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
@@ -8,78 +8,105 @@
     <author>Philipp Salmutter</author>
     <authorEmail>philipp@slamutter.net</authorEmail>
     <authorUrl>https://salmutter.net/</authorUrl>
-    <description>Zeigt Bilder in einem definierbaren Ordner als kleine Vorschaubilder im Body-Text an. Mit Klick auf ein Bild, öffnet sich eine PhotoSwipe Galerie. {gallery}ordner{/gallery}</description>
+    <description>PLG_CONTENT_GALLERY_XML_DESCRIPTION</description>
     <files>
         <filename plugin="gallery">gallery.php</filename>
         <filename plugin="gallery">index.html</filename>
         <folder plugin="gallery">plugin_gallery</folder>
+        <folder>language</folder>
     </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/en-GB.plg_content_gallery.ini</language>
+        <language tag="en-GB">language/en-GB/en-GB.plg_content_gallery.sys.ini</language>
+        <language tag="de-DE">language/de-DE/de-DE.plg_content_gallery.ini</language>
+        <language tag="de-DE">language/de-DE/de-DE.plg_content_gallery.sys.ini</language>
+    </languages>
     <config>
         <fields name="params">
-            <fieldset name="basic" label="Thumbnails">
+            <fieldset name="basic" label="PLG_CONTENT_GALLERY_FIELDSET_THUMBNAILS">
+                <field
+                    name="columns"
+                    type="number"
+                    label="PLG_CONTENT_GALLERY_COLUMNS_LABEL"
+                    description="PLG_CONTENT_GALLERY_COLUMNS_DESC"
+                    default="4"
+                    min="1"
+                    max="12"
+                />
+                <field
+                    name="thumb_max_height"
+                    type="number"
+                    label="PLG_CONTENT_GALLERY_THUMB_MAX_HEIGHT_LABEL"
+                    description="PLG_CONTENT_GALLERY_THUMB_MAX_HEIGHT_DESC"
+                    default="180"
+                    min="0"
+                />
                 <field
                     name="thumb_width"
                     type="number"
-                    label="Thumbnail Breite"
-                    description="Maximale Breite der Vorschaubilder in px (fit=contain)."
+                    label="PLG_CONTENT_GALLERY_THUMB_WIDTH_LABEL"
+                    description="PLG_CONTENT_GALLERY_THUMB_WIDTH_DESC"
                     default="394"
                     min="0"
                 />
                 <field
                     name="thumb_height"
                     type="number"
-                    label="Thumbnail Höhe"
-                    description="Maximale Höhe der Vorschaubilder in px (fit=contain)."
+                    label="PLG_CONTENT_GALLERY_THUMB_HEIGHT_LABEL"
+                    description="PLG_CONTENT_GALLERY_THUMB_HEIGHT_DESC"
                     default="296"
                     min="0"
                 />
                 <field
                     name="thumb_srcset"
                     type="text"
-                    label="Thumbnail srcset Breiten"
-                    description="Kommagetrennte Liste zusätzlicher Breiten für das srcset-Attribut der Thumbnails (z.B. 788,1182 für 2x/3x). Leer = kein srcset."
+                    label="PLG_CONTENT_GALLERY_THUMB_SRCSET_LABEL"
+                    description="PLG_CONTENT_GALLERY_THUMB_SRCSET_DESC"
                     default="788,1182"
                 />
                 <field
                     name="thumb_sizes"
                     type="text"
-                    label="Thumbnail sizes-Attribut"
-                    description="Wert des sizes-Attributs für Thumbnails (z.B. (max-width: 600px) 50vw, 394px)."
+                    label="PLG_CONTENT_GALLERY_THUMB_SIZES_LABEL"
+                    description="PLG_CONTENT_GALLERY_THUMB_SIZES_DESC"
                     default="(max-width: 600px) 50vw, 394px"
                 />
             </fieldset>
-            <fieldset name="full" label="Große Ansicht (PhotoSwipe)">
+            <fieldset name="full" label="PLG_CONTENT_GALLERY_FIELDSET_FULL">
                 <field
                     name="full_width"
                     type="number"
-                    label="Bild Breite"
-                    description="Maximale Breite des großen Bildes in px (fit=contain)."
+                    label="PLG_CONTENT_GALLERY_FULL_WIDTH_LABEL"
+                    description="PLG_CONTENT_GALLERY_FULL_WIDTH_DESC"
                     default="1660"
                     min="0"
                 />
                 <field
                     name="full_height"
                     type="number"
-                    label="Bild Höhe"
-                    description="Maximale Höhe des großen Bildes in px (fit=contain)."
+                    label="PLG_CONTENT_GALLERY_FULL_HEIGHT_LABEL"
+                    description="PLG_CONTENT_GALLERY_FULL_HEIGHT_DESC"
                     default="1245"
                     min="0"
                 />
                 <field
                     name="full_srcset"
                     type="text"
-                    label="srcset Breiten"
-                    description="Kommagetrennte Liste von Breiten für responsive Bilder in der PhotoSwipe-Ansicht (z.B. 480,768,1024,1660). Leer = kein srcset."
+                    label="PLG_CONTENT_GALLERY_FULL_SRCSET_LABEL"
+                    description="PLG_CONTENT_GALLERY_FULL_SRCSET_DESC"
                     default="480,768,1024,1280,1660"
                 />
                 <field
                     name="full_sizes"
                     type="text"
-                    label="sizes-Attribut"
-                    description="Wert des sizes-Attributs für das große Bild (z.B. 100vw oder (max-width: 1660px) 100vw, 1660px)."
+                    label="PLG_CONTENT_GALLERY_FULL_SIZES_LABEL"
+                    description="PLG_CONTENT_GALLERY_FULL_SIZES_DESC"
                     default="(max-width: 1660px) 100vw, 1660px"
                 />
             </fieldset>
         </fields>
     </config>
+    <updateservers>
+        <server type="extension" name="Gallery Content Plugin">https://raw.githubusercontent.com/salmutter-net/gallery/main/update.xml</server>
+    </updateservers>
 </extension>

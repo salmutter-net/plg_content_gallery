@@ -177,6 +177,8 @@ class PlgContentGallery extends CMSPlugin implements SubscriberInterface
         $fullH    = (int)$this->params->get('full_height', 1245);
         $fullSrc  = $this->parseWidthList($this->params->get('full_srcset', '480,768,1024,1280,1660'));
         $fullSz   = trim((string)$this->params->get('full_sizes', ''));
+        $columns  = max(1, (int)$this->params->get('columns', 4));
+        $maxHeight = max(0, (int)$this->params->get('thumb_max_height', 180));
 
         $html = '';
         if ($this->galleryCountArticles === 0) {
@@ -184,6 +186,7 @@ class PlgContentGallery extends CMSPlugin implements SubscriberInterface
             $head = array();
             $document = Factory::getApplication()->getDocument();
             $head[] = '<link rel="stylesheet" href="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe.css" type="text/css" media="screen" />';
+            $head[] = '<link rel="stylesheet" href="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/gallery.css" type="text/css" media="screen" />';
             $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe.umd.min.js"></script>';
             $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe-lightbox.umd.min.js"></script>';
             $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/gallery.js"></script>';
@@ -194,7 +197,7 @@ class PlgContentGallery extends CMSPlugin implements SubscriberInterface
         }
 
         // Generate the image thumbnail-list
-        $html .= '<div class="gallery-wrapper" itemscope itemtype="http://schema.org/ImageGallery">';
+        $html .= '<div class="gallery-wrapper" itemscope itemtype="http://schema.org/ImageGallery" style="--gallery-columns:' . $columns . ';--gallery-max-height:' . $maxHeight . 'px">';
         $count = 1;
         foreach ($images as $key => $image) {
             $largeSrcset = '';
