@@ -8,63 +8,60 @@
  *  @license Commercial
  */
 
+use Joomla\CMS\Event\Content\ContentPrepareEvent;
+use Joomla\CMS\Factory;
+use Joomla\CMS\Language\Text;
+use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Plugin\PluginHelper;
-use Joomla\CMS\Version;
+use Joomla\CMS\Uri\Uri;
+use Joomla\Event\SubscriberInterface;
 use Joomla\Plugin\System\Imagetransformer\Extension\Imagetransformer;
 use Joomla\Registry\Registry;
 
 defined('_JEXEC') or die('Restricted access');
 
-class plgContentGallery extends JPlugin {
+class PlgContentGallery extends CMSPlugin implements SubscriberInterface
+{
     protected $_absolute_path;
     protected $_live_site;
     protected $_rootfolder;
     protected $_images_dir;
     public $imageTransformer = false;
 
-    public function __construct(&$subject, $config) {
-        $app = JFactory::getApplication();
+    // Request-scoped counters (replace the old $_SESSION usage)
+    private $galleryCount = -1;
+    private $galleryCountArticles = -1;
 
-        if ($app->isClient('admin')) {
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            'onContentPrepare' => 'onContentPrepare',
+        ];
+    }
+
+    public function __construct($subject, $config) {
+        parent::__construct($subject, $config);
+
+        $app = Factory::getApplication();
+
+        if ($app->isClient('administrator')) {
             return;
         }
 
-        $version = new Version();
-
-        $joomla_main_version = substr($version->getShortVersion(), 0, strpos($version->getShortVersion(), '.'));
-
-        if ($joomla_main_version < '3') {
-            JError::raiseWarning(100, JText::_('Dieses Plugin funktioniert nur mit Joomla 3 und größer!'));
-            return;
-        }
-
-        if (isset($_SESSION['gallerycount'])) {
-            unset($_SESSION['gallerycount']);
-        }
-
-        if (isset($_SESSION['gallerycountarticles'])) {
-            unset($_SESSION['gallerycountarticles']);
-        }
-
-        if (class_exists(Imagetransformer::class) && JPluginHelper::isEnabled('system', 'imagetransformer')) {
+        if (class_exists(Imagetransformer::class) && PluginHelper::isEnabled('system', 'imagetransformer')) {
             $this->imageTransformer = 'Imagetransformer';
-        } else if (class_exists('ImgResizeCache')) {
+        } elseif (class_exists('ImgResizeCache')) {
             $this->imageTransformer = 'ImgResizeCache';
         }
 
-        parent::__construct($subject, $config);
-
         $this->_absolute_path = JPATH_SITE;
-        $this->_live_site = JURI::base();
-
-        if (substr($this->_live_site, -1) == '/') {
-            $this->_live_site = substr($this->_live_site, 0, -1);
-        }
+        $this->_live_site = rtrim(Uri::base(), '/');
 
         $this->_params = array();
     }
 
-    function onContentPrepare($context, &$object) {
+    public function onContentPrepare(ContentPrepareEvent $event) {
+        $object = $event->getArgument('subject');
         $textToParse = $object->text;
         $type = 'text';
         if (empty($textToParse) && !empty($object->introtext)) {
@@ -80,21 +77,13 @@ class plgContentGallery extends JPlugin {
 
         $this->_rootfolder = '/images/';
 
-        if (!isset($_SESSION['gallerycountarticles'])) {
-            $_SESSION['gallerycountarticles'] = -1;
-        }
-
         if (preg_match_all('@{gallery}(.*){/gallery}@Us', $textToParse, $matches, PREG_PATTERN_ORDER) > 0) {
-            $_SESSION['gallerycountarticles']++;
+            $this->galleryCountArticles++;
 
-            if (!isset($_SESSION['gallerycount'])) {
-                $_SESSION['gallerycount'] = -1;
-            }
-
-            $this->_params['lang'] = JFactory::getLanguage()->getTag();
+            $this->_params['lang'] = Factory::getApplication()->getLanguage()->getTag();
 
             foreach($matches[0] as $match) {
-                $_SESSION['gallerycount']++;
+                $this->galleryCount++;
                 $galleryPath = preg_replace('@{.+?}@', '', $match);
 
                 unset($images);
@@ -123,11 +112,22 @@ class plgContentGallery extends JPlugin {
                 if ($imageCount) {
                     $this->renderGallery($type, $object, $images, $galleryPath);
                 } else {
-                    $html = '<strong>'.JText::_('Im angegebenen Ordner befinden sich keine Bilder bzw. können sie nicht ausgelesen werden.').'</strong><br />'.JText::_('Pfad: ').' '.$this->_live_site.$this->_rootfolder.$this->_images_dir;
+                    $html = '<strong>'.Text::_('Im angegebenen Ordner befinden sich keine Bilder bzw. können sie nicht ausgelesen werden.').'</strong><br />'.Text::_('Pfad: ').' '.$this->_live_site.$this->_rootfolder.$this->_images_dir;
                 }
             }
         }
         unset($textToParse);
+    }
+
+    private function parseWidthList($value): array {
+        $widths = [];
+        foreach (explode(',', (string)$value) as $part) {
+            $w = (int)trim($part);
+            if ($w > 0) {
+                $widths[] = $w;
+            }
+        }
+        return array_values(array_unique($widths));
     }
 
     private function getContainedImageSize($imagePath, $maxW, $maxH) {
@@ -158,7 +158,7 @@ class plgContentGallery extends JPlugin {
 
     function renderGallery($type, &$object, $images, $galleryPath) {
         if (empty($type) || empty($object) || empty($images) || empty($galleryPath)) {
-            echo '<strong>'.JText::_('Essentielle Variable nicht übergeben!').'</strong>';
+            echo '<strong>'.Text::_('Essentielle Variable nicht übergeben!').'</strong>';
             return NULL;
         }
         if ( $this->imageTransformer === 'Imagetransformer' ) {
@@ -169,84 +169,75 @@ class plgContentGallery extends JPlugin {
         if ($this->imageTransformer === 'ImgResizeCache') {
             $resizer = new ImgResizeCache();
         }
-        $html = '';
-        if ($_SESSION['gallerycountarticles'] === 0) {
-            // Include once the DOM nodes needed for gallery from external file and add the to the $html-array
-            ob_start();
-            include __DIR__ . '/plugin_gallery/photoSwipe-Dom.php';
-            $galleryDomTree = ob_get_clean();
+        $thumbW   = (int)$this->params->get('thumb_width', 394);
+        $thumbH   = (int)$this->params->get('thumb_height', 296);
+        $thumbSrc = $this->parseWidthList($this->params->get('thumb_srcset', '788,1182'));
+        $thumbSz  = trim((string)$this->params->get('thumb_sizes', ''));
+        $fullW    = (int)$this->params->get('full_width', 1660);
+        $fullH    = (int)$this->params->get('full_height', 1245);
+        $fullSrc  = $this->parseWidthList($this->params->get('full_srcset', '480,768,1024,1280,1660'));
+        $fullSz   = trim((string)$this->params->get('full_sizes', ''));
 
-            // Include hte gallery's CSS and JS files once in the head of the page
+        $html = '';
+        if ($this->galleryCountArticles === 0) {
+            // Include the gallery's CSS and JS files once in the head of the page
             $head = array();
-            $document = JFactory::getDocument();
+            $document = Factory::getApplication()->getDocument();
             $head[] = '<link rel="stylesheet" href="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe.css" type="text/css" media="screen" />';
-            $head[] = '<link rel="stylesheet" href="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/default-skin/default-skin.css" type="text/css" media="screen" />';
-            $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe.min.js"></script>';
-            $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe-ui-default.min.js"></script>';
+            $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe.umd.min.js"></script>';
+            $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/photoswipe-lightbox.umd.min.js"></script>';
             $head[] = '<script type="text/javascript" src="'.$this->_live_site.'/plugins/content/gallery/plugin_gallery/gallery.js"></script>';
-            $head[] = '
-                        <script type="text/javascript">
-                            function appendHtml(el, str) {
-                              var div = document.createElement(\'div\');
-                              div.innerHTML = str;
-                              while (div.children.length > 0) {
-                                el.appendChild(div.children[0]);
-                              }
-                            }
-                            var html = \'' . preg_replace('/^\s+|\n|\r|\s+$/m', '', $galleryDomTree) . '\';
-                            document.addEventListener(\'DOMContentLoaded\', function() {
-                                appendHtml(document.body, html);
-                            });
-                        </script>
-            ';
             $head = "\n".implode("\n", $head)."\n";
             if (is_object($document) && method_exists($document, 'addCustomTag')) {
                 $document->addCustomTag($head);
             }
         }
 
-        // Generate the HTML-script-tag with dynamic images
-        $html .= ' <script>
-                        window.addEventListener("DOMContentLoaded", function() {
-                            var pswpElement = document.querySelectorAll(".pswp")[0];
-                            var items = [];
-                            var options = {
-                                index: 0,
-                                preload: [0,0]
-                            };
-                            var gallery = new PhotoSwipe( pswpElement, PhotoSwipeUI_Default, items, options);
-                            //gallery.init();
-                            initPhotoSwipeFromDOM(".gallery-wrapper");
-                        } );
-                  </script>
-        ';
-
         // Generate the image thumbnail-list
         $html .= '<div class="gallery-wrapper" itemscope itemtype="http://schema.org/ImageGallery">';
         $count = 1;
         foreach ($images as $key => $image) {
+            $largeSrcset = '';
+            $smallSrcset = '';
             if ($this->imageTransformer === 'Imagetransformer') {
                 $largeImgSrc = Imagetransformer::generateUrl($image, [
-                    'w' => 1660,
-                    'h' => 1245,
+                    'w' => $fullW,
+                    'h' => $fullH,
                     'fit' => 'contain',
                     'q' => 70,
                     'fm' => 'webp'
                 ]);
-                $largeImgSize = $this->getContainedImageSize($image, 1660, 1245);
+                $largeImgSize = $this->getContainedImageSize($image, $fullW, $fullH);
                 $smallImgSrc = Imagetransformer::generateUrl($image, [
-                    'w' => 394,
-                    'h' => 296,
+                    'w' => $thumbW,
+                    'h' => $thumbH,
                     'fit' => 'contain',
                     'q' => 70,
                     'fm' => 'webp'
                 ]);
-                $smallImgSize = $this->getContainedImageSize($image, 394, 296);
+                $smallImgSize = $this->getContainedImageSize($image, $thumbW, $thumbH);
+
+                // Build srcset entries, scaled proportionally to the configured bounding box
+                $entries = [];
+                foreach ($fullSrc as $w) {
+                    if ($w <= $fullW) {
+                        $h = max(1, (int)round($w * $fullH / $fullW));
+                        $entries[] = Imagetransformer::generateUrl($image, ['w' => $w, 'h' => $h, 'fit' => 'contain', 'q' => 70, 'fm' => 'webp']) . ' ' . $w . 'w';
+                    }
+                }
+                $largeSrcset = implode(', ', $entries);
+
+                $entries = [];
+                foreach ($thumbSrc as $w) {
+                    $h = max(1, (int)round($w * $thumbH / $thumbW));
+                    $entries[] = Imagetransformer::generateUrl($image, ['w' => $w, 'h' => $h, 'fit' => 'contain', 'q' => 70, 'fm' => 'webp']) . ' ' . $w . 'w';
+                }
+                $smallSrcset = implode(', ', $entries);
             } else if ($this->imageTransformer === 'ImgResizeCache') {
-                $largeImgSrc = htmlspecialchars($resizer->resize($image, ['w' => 1660, 'h' => 1245, 'crop' => false, 'canvas-color' => '#000']));
-                $largeImgSize = $this->getContainedImageSize($image, 1660, 1245);
-                $smallImgSrc = htmlspecialchars($resizer->resize($image, ['w' => 197, 'h' => 132, 'crop' => false, 'canvas-color' => '#fff']));
-                $smallImgSize = $this->getContainedImageSize($image, 197, 132);
+                $largeImgSrc = htmlspecialchars($resizer->resize($image, ['w' => $fullW, 'h' => $fullH, 'crop' => false, 'canvas-color' => '#000']));
+                $largeImgSize = $this->getContainedImageSize($image, $fullW, $fullH);
+                $smallImgSrc = htmlspecialchars($resizer->resize($image, ['w' => $thumbW, 'h' => $thumbH, 'crop' => false, 'canvas-color' => '#fff']));
+                $smallImgSize = $this->getContainedImageSize($image, $thumbW, $thumbH);
             } else {
                 $largeImgSrc = $image;
                 $largeImgSize = @getimagesize($this->_absolute_path . '/' . $image);
@@ -255,15 +246,31 @@ class plgContentGallery extends JPlugin {
             }
 
             if (!$largeImgSize || $largeImgSize[0] <= 0 || $largeImgSize[1] <= 0) {
-                $largeImgSize = [1660, 1245];
+                $largeImgSize = [$fullW, $fullH];
             }
             if (!$smallImgSize || $smallImgSize[0] <= 0 || $smallImgSize[1] <= 0) {
-                $smallImgSize = $largeImgSize;
+                $smallImgSize = [$thumbW, $thumbH];
+            }
+
+            $linkAttrs = 'href="' . $largeImgSrc . '" data-pswp-width="' . (int)$largeImgSize[0] . '" data-pswp-height="' . (int)$largeImgSize[1] . '"';
+            if ($largeSrcset !== '') {
+                $linkAttrs .= ' data-pswp-srcset="' . htmlspecialchars($largeSrcset) . '"';
+                if ($fullSz !== '') {
+                    $linkAttrs .= ' data-pswp-sizes="' . htmlspecialchars($fullSz) . '"';
+                }
+            }
+
+            $imgAttrs = 'class="gallery-thumbnail-image" loading="lazy" width="' . (int)$smallImgSize[0] . '" height="' . (int)$smallImgSize[1] . '" src="' . $smallImgSrc . '"';
+            if ($smallSrcset !== '') {
+                $imgAttrs .= ' srcset="' . htmlspecialchars($smallSrcset) . '"';
+                if ($thumbSz !== '') {
+                    $imgAttrs .= ' sizes="' . htmlspecialchars($thumbSz) . '"';
+                }
             }
 
             $html .= ' <figure class="gallery-thumbnail">';
-            $html .= '     <a href="' . $largeImgSrc . '" aria-label="Öffnet Bild Nummer ' . $count . '" data-size="' . (int)$largeImgSize[0] . 'x' . (int)$largeImgSize[1] . '">';
-            $html .= '         <img class="gallery-thumbnail-image" loading="lazy" width="' . (int)$smallImgSize[0] . '" height="' . (int)$smallImgSize[1] . '" src="' . $smallImgSrc . '" alt="" />';
+            $html .= '     <a ' . $linkAttrs . ' aria-label="Öffnet Bild Nummer ' . $count . '">';
+            $html .= '         <img ' . $imgAttrs . ' alt="" />';
             $html .= '     </a>';
             $html .= ' </figure>';
             $count++;
